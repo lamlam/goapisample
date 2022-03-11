@@ -22,6 +22,7 @@ type random2Response struct {
 // - 50以上なら {message: "70"}
 // - 50未満なら {fail: "31"}
 func random2(w http.ResponseWriter, req *http.Request) {
+	fmt.Println("request to random2")
 	threshold := 50
 	results := make([]interface{}, 10)
 	for i := range results {
@@ -45,6 +46,7 @@ type randomResponse struct {
 }
 
 func random(w http.ResponseWriter, req *http.Request) {
+	fmt.Println("request to random")
 	resp := randomResponse{rand.Intn(100)}
 	w.Header().Set("Content-Type", "application/json")
 	err := json.NewEncoder(w).Encode(resp)

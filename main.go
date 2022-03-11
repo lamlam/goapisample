@@ -8,6 +8,28 @@ import (
 	"net/http"
 )
 
+type echoBody struct {
+	Id      int    `json:"id"`
+	Message string `json:"message"`
+}
+
+func echoJson(w http.ResponseWriter, req *http.Request) {
+	fmt.Println("request to echo json")
+
+	b := echoBody{}
+	err := json.NewDecoder(req.Body).Decode(&b)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	err = json.NewEncoder(w).Encode(b)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+	}
+}
+
 type successMessage struct {
 	Message int `json:"success"`
 }
@@ -77,6 +99,7 @@ func main() {
 	http.HandleFunc("/echo", echo)
 	http.HandleFunc("/random", random)
 	http.HandleFunc("/random2", random2)
+	http.HandleFunc("/echojson", echoJson)
 
 	fmt.Printf("Start server at localhost:%s\n", port)
 	http.ListenAndServe(":"+port, nil)

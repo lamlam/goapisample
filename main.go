@@ -19,7 +19,7 @@ type random2Response struct {
 }
 
 // 10回randして下記メッセージの配列を返す
-// - 50以上なら {message: "70"}
+// - 50以上なら {success: "70"}
 // - 50未満なら {fail: "31"}
 func random2(w http.ResponseWriter, req *http.Request) {
 	fmt.Println("request to random2")

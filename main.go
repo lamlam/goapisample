@@ -8,23 +8,46 @@ import (
 	"net/http"
 )
 
-type echoBody struct {
-	Id      int    `json:"id"`
-	Message string `json:"message"`
+func sample(w http.ResponseWriter, req *http.Request) {
+	fmt.Println("request to sample")
+
+	// http.ResponseWriterはio.Writer interfaceを満たしているので、
+	// fmt.Fprintを利用できる
+	fmt.Fprint(w, "test")
+
+	// 他の記述方法として、http.ResponseWriterのWriteを使う場合は[]byteに変換する
+	// w.Write([]byte("test"))
 }
 
-func echoJson(w http.ResponseWriter, req *http.Request) {
-	fmt.Println("request to echo json")
+func echo(w http.ResponseWriter, req *http.Request) {
+	fmt.Println("request to echo")
+	body := req.Body
+	defer body.Close()
 
-	b := echoBody{}
-	err := json.NewDecoder(req.Body).Decode(&b)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
+	// request bodyを読む際に、fileや標準入力を読むようにscannerを利用できる。
+	// Bodyがio.Reader interfaceを満たすため。
+	scanner := bufio.NewScanner(req.Body)
+	for scanner.Scan() {
+		fmt.Fprint(w, scanner.Text())
 	}
+}
 
+// jsonのレスポンスに利用する構造体
+type randomResponse struct {
+	// 大文字の公開されている変数のみjsonの変換対象になる
+	Value int `json:"value"`
+}
+
+func random(w http.ResponseWriter, req *http.Request) {
+	fmt.Println("request to random")
+	resp := randomResponse{rand.Intn(100)}
+
+	// レスポンスヘッダーの設定はbodyに書き込む前に実施する必要がある
 	w.Header().Set("Content-Type", "application/json")
-	err = json.NewEncoder(w).Encode(b)
+	// json.NewEncoderは指定したio.Writerにjson encode結果を書き込むencoderを作成する。
+	// http.ResponseWriterはio.Writerを満たすため、json.NewEncoderの書き込み先に指定できる。
+	// json encodeした結果をresponse bodyに書き込む。
+	err := json.NewEncoder(w).Encode(resp)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 	}
@@ -37,6 +60,7 @@ type failMessage struct {
 	Message int `json:"fail"`
 }
 type random2Response struct {
+	// successMesage or failMessage を取りたいが書き方がわからない
 	Results []interface{} `json:"results"`
 }
 
@@ -63,34 +87,32 @@ func random2(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-type randomResponse struct {
-	Value int `json:"value"`
+type echoBody struct {
+	Id      int    `json:"id"`
+	Message string `json:"message"`
 }
 
-func random(w http.ResponseWriter, req *http.Request) {
-	fmt.Println("request to random")
-	resp := randomResponse{rand.Intn(100)}
+// request bodyでechoBody型のjsonを受け取り、そのままjsonをレスポンス
+func echoJson(w http.ResponseWriter, req *http.Request) {
+	fmt.Println("request to echo json")
+
+	b := echoBody{}
+
+	// json.NewDecoderは指定したio.Readerからjson文字列を読むDecoderを作成する。
+	// Bodyはio.Readerを満たすため、json.NewDecoderの読み込み先に指定できる。
+	// json decodeした結果をechoBodyインスタンスへ書き込む。
+	err := json.NewDecoder(req.Body).Decode(&b)
+	if err != nil {
+		// decodeのエラーメッセージをそのままレスポンス
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
 	w.Header().Set("Content-Type", "application/json")
-	err := json.NewEncoder(w).Encode(resp)
+	err = json.NewEncoder(w).Encode(b)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 	}
-}
-
-func echo(w http.ResponseWriter, req *http.Request) {
-	fmt.Println("request to echo")
-	body := req.Body
-	defer body.Close()
-
-	scanner := bufio.NewScanner(req.Body)
-	for scanner.Scan() {
-		fmt.Fprint(w, scanner.Text())
-	}
-}
-
-func sample(w http.ResponseWriter, req *http.Request) {
-	fmt.Println("request to sample")
-	fmt.Fprintf(w, "test")
 }
 
 func main() {

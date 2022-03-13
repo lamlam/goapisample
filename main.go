@@ -53,15 +53,8 @@ func random(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-type successMessage struct {
-	Message int `json:"success"`
-}
-type failMessage struct {
-	Message int `json:"fail"`
-}
 type random2Response struct {
-	// successMesage or failMessage を取りたいが書き方がわからない
-	Results []interface{} `json:"results"`
+	Results []map[string]int `json:"results"`
 }
 
 // 10回randして下記メッセージの配列を返す
@@ -70,13 +63,13 @@ type random2Response struct {
 func random2(w http.ResponseWriter, req *http.Request) {
 	fmt.Println("request to random2")
 	threshold := 50
-	results := make([]interface{}, 10)
+	results := make([]map[string]int, 10)
 	for i := range results {
 		v := rand.Intn(100)
 		if v >= threshold {
-			results[i] = successMessage{v}
+			results[i] = map[string]int{"success": v}
 		} else {
-			results[i] = failMessage{v}
+			results[i] = map[string]int{"fail": v}
 		}
 	}
 
